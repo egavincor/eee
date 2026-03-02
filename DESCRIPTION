@@ -1,11 +1,11 @@
 Package: eee
-Title: What the Package Does (One Line, Title Case)
+Title: Ecological and Evolutionary Error-in-variable methods
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Edric", "Gavin", , "egavincor@gmail.com", role = c("aut", "cre"))
+Description: Study data when "independent" variables have error in them 
+    (typical of observational data).
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
