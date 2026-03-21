@@ -133,7 +133,7 @@ change_citation_printing_default<-function(TRUE_for_print_FALSE_for_not) {
 #'
 #' @keywords internal
 #' @noRd
-internal_print_citations<-function(citedItemList=list()){
+internal_print_citations<-function(citedItemList=list(), messages=list()){
   if (eee_internal_environment_0000$GLOBAL_print_citations) { #only need to take action if actually printing
     nItems<-length(citedItemList)
     fI<-function(fIndex) { #formats index for printing
@@ -149,8 +149,11 @@ internal_print_citations<-function(citedItemList=list()){
     pS01<-"For this function please cite ..."
     pSmid<-""
     if (nItems>0) {
+      if (nItems!=length(messages)) {
+        stop("length of <citedItemList> and <messages> must be identical")
+      }
       for (index1 in 1:nItems) {
-        pSmid<-paste0(pSmid,fI(index1),
+        pSmid<-paste0(pSmid,fI(index1), messages[[index1]],
                       citationStrings[[citedItemList[[index1]]]])
       }
     }

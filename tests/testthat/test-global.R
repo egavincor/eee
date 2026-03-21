@@ -58,14 +58,14 @@ test_that("internal_print_citations produces correct output based on global flag
 
   # expect_output captures cat() and print() output to match against a regex
   expect_output(
-    internal_print_citations(list("lmodel2", "Rayner85")),
+    internal_print_citations(list("lmodel2", "Rayner85"),list("","")),
     regexp = "you can TURN OFF.*lmodel2.*Rayner.*R Software.*This package",
     ignore.case = TRUE
   )
 
   # Check that numbering formatting works (1, 2, 3, 4)
   expect_output(
-    internal_print_citations(list("lmodel2")),
+    internal_print_citations(list("lmodel2"),list("")),
     regexp = "1\\).*2\\) R Software.*3\\) This package"
   )
 
@@ -74,7 +74,7 @@ test_that("internal_print_citations produces correct output based on global flag
 
   # expect_silent ensures absolutely no messages, warnings, or cat() output occur
   expect_silent(
-    internal_print_citations(list("lmodel2"))
+    internal_print_citations(list("lmodel2",list("")))
   )
 })
 
