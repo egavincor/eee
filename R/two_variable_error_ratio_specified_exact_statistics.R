@@ -226,7 +226,7 @@ validate_two_variable_exact_CI_function_arguments<-function(
 #' @export
 #'
 #' @examples
-#' set.seed(0); n<-10; y1<-rnorm(n); x1<-rnorm(n) y2<--y1
+#' set.seed(0); n<-10; y1<-rnorm(n); x1<-rnorm(n); y2<--y1
 #' c1a<-two_variable_exact_CI(correlation=cor(x1,y2),
 #'  sdOFy_divided_by_sdOFx=sd(y2)/sd(x1),
 #'  square_root_of_lambda=1,
