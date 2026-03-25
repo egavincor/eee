@@ -12,6 +12,8 @@ validate_two_variable_exact_CI_function_arguments(
   validate_sdOFy_divided_by_sdOFx = FALSE,
   square_root_of_lambda = NA,
   validate_square_root_of_lambda = FALSE,
+  lambda = NA,
+  validate_lambda = FALSE,
   sample_size = NA,
   validate_sample_size = FALSE,
   slope_hypothesis = NA,
@@ -31,7 +33,8 @@ validate_two_variable_exact_CI_function_arguments(
   y = NA,
   validate_y = FALSE,
   x = NA,
-  validate_x = FALSE
+  validate_x = FALSE,
+  validate_x_and_y = FALSE
 )
 }
 \arguments{
@@ -49,6 +52,12 @@ variable.}
 
 \item{validate_square_root_of_lambda}{\code{logical} \code{TRUE} if argument should be validated.}
 
+\item{lambda}{\code{numeric} lambda
+is the ratio of the error in the y-axis variable to that in the x-axis
+variable.}
+
+\item{validate_lambda}{\code{logical} \code{TRUE} if argument should be validated.}
+
 \item{sample_size}{\code{numeric} number of observations per variable}
 
 \item{validate_sample_size}{\code{logical} \code{TRUE} if argument should be validated.}
@@ -63,9 +72,9 @@ null hypothesis assuming it is true.}
 \item{validate_CI_coefficient}{\code{logical} \code{TRUE} if argument should be validated.}
 
 \item{sql_round_to_zero_threshold}{\code{numeric} if the square root of lambda
-argument \code{square_root_of_lambda} is less than this threshold it is rounded
+is less than this threshold, then lambda is rounded
 to zero as appropriate and so the answer should be identical to as if
-zero was given as \code{square_root_of_lambda}}
+zero was given as \code{lambda}/\code{square_root_of_lambda}}
 
 \item{validate_sql_round_to_zero_threshold}{\code{logical} \code{TRUE}
 if argument should be validated.}
@@ -101,6 +110,8 @@ functional information (if any) to terminal.}
 \item{x}{\code{numeric} vector of x-axis observations}
 
 \item{validate_x}{\code{logical} \code{TRUE} if argument should be validated.}
+
+\item{validate_x_and_y}{\code{logical} \code{TRUE} if x and y should be jointly validated.}
 }
 \value{
 \code{invisible(TRUE)} if all checks pass; throws an

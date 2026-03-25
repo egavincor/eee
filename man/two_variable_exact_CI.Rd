@@ -36,9 +36,9 @@ variable.}
 null hypothesis assuming it is true.}
 
 \item{sql_round_to_zero_threshold}{\code{numeric} if the square root of lambda
-argument \code{square_root_of_lambda} is less than this threshold it is rounded
+is less than this threshold, then lambda is rounded
 to zero as appropriate and so the answer should be identical to as if
-zero was given as \code{square_root_of_lambda}}
+zero was given as \code{lambda}/\code{square_root_of_lambda}}
 
 \item{lostDoF}{\code{numeric} defaults to 2, I have never tried changing
 this value, but you can change it IF you have a compelling reason.

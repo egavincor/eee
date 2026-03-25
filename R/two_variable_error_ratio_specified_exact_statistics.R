@@ -20,6 +20,10 @@
 #' is the ratio of the error in the y-axis variable to that in the x-axis
 #' variable.
 #' @param validate_square_root_of_lambda `logical` `TRUE` if argument should be validated.
+#' @param lambda `numeric` lambda
+#' is the ratio of the error in the y-axis variable to that in the x-axis
+#' variable.
+#' @param validate_lambda `logical` `TRUE` if argument should be validated.
 #' @param sample_size `numeric` number of observations per variable
 #' @param validate_sample_size `logical` `TRUE` if argument should be validated.
 #' @param slope_hypothesis `numeric` slope (if any) to test as null hypothesis.
@@ -28,9 +32,9 @@
 #' null hypothesis assuming it is true.
 #' @param validate_CI_coefficient `logical` `TRUE` if argument should be validated.
 #' @param sql_round_to_zero_threshold `numeric` if the square root of lambda
-#' argument `square_root_of_lambda` is less than this threshold it is rounded
+#' is less than this threshold, then lambda is rounded
 #' to zero as appropriate and so the answer should be identical to as if
-#' zero was given as `square_root_of_lambda`
+#' zero was given as `lambda`/`square_root_of_lambda`
 #' @param validate_sql_round_to_zero_threshold `logical` `TRUE`
 #' if argument should be validated.
 #' @param lostDoF `numeric` defaults to 2, I have never tried changing
@@ -53,6 +57,7 @@
 #' @param validate_y `logical` `TRUE` if argument should be validated.
 #' @param x `numeric` vector of x-axis observations
 #' @param validate_x `logical` `TRUE` if argument should be validated.
+#' @param validate_x_and_y `logical` `TRUE` if x and y should be jointly validated.
 #'
 #' @returns `invisible(TRUE)` if all checks pass; throws an
 #' informative error via stop() if any validation fails.
@@ -76,6 +81,8 @@ validate_two_variable_exact_CI_function_arguments<-function(
     validate_sdOFy_divided_by_sdOFx=FALSE,
     square_root_of_lambda=NA,
     validate_square_root_of_lambda=FALSE,
+    lambda=NA,
+    validate_lambda=FALSE,
     sample_size=NA,
     validate_sample_size=FALSE,
     slope_hypothesis=NA,
@@ -95,7 +102,8 @@ validate_two_variable_exact_CI_function_arguments<-function(
     y=NA,
     validate_y=FALSE,
     x=NA,
-    validate_x=FALSE
+    validate_x=FALSE,
+    validate_x_and_y=FALSE
 ){
   validate_boolean_flags(
     "validate_correlation" = validate_correlation,
@@ -137,6 +145,13 @@ validate_two_variable_exact_CI_function_arguments<-function(
                     name="square_root_of_lambda", type="numeric")
     if (square_root_of_lambda<0) {
       stop("`square_root_of_lambda` must be >=0.", call. = FALSE)
+    }
+  }
+  if (validate_lambda) {
+    validate_scalar(x=lambda,
+                    name="lambda", type="numeric")
+    if (lambda<0) {
+      stop("`lambda` must be >=0.", call. = FALSE)
     }
   }
   if (validate_sample_size) {
@@ -187,9 +202,13 @@ validate_two_variable_exact_CI_function_arguments<-function(
   if (validate_x) {
     # pass for now
   }
+  if (validate_x_and_y) {
+    if (length(y)!=length(x)) {
+      stop ("y-axis and x-axis variables must have same length", call. = FALSE)
+    }
+  }
   invisible(TRUE)
 }
-
 
 
 #' calculate slope, exact CI, etc. for two variable relationship given lambda
@@ -352,7 +371,221 @@ two_variable_exact_CI<-function(correlation,
                    "calculationTerms"=calculationTerms,
                    "givenArguments"=givenArguments)
   if (print_citation_info) {
-    internal_print_citations(list("Rayner85"))
+    internal_print_citations(list("Rayner85"),list(""))
   }
   return(returnList)
 }
+
+
+#' Calculate Exact Confidence Interval for a Two-Variable Relationship via Formula
+#'
+#' Accepts a
+#' standard R formula and optionally a data frame, extracting the response and
+#' predictor variables automatically before computing the specified
+#' error-in-variable regression
+#'
+#' @param formula A two-sided formula of the form \code{y ~ x}, where \code{y}
+#'   is the response variable and \code{x} is the predictor variable. Both
+#'   variables must be numeric vectors of the same length with no missing
+#'   values. Multivariate formulas (e.g. \code{y ~ x1 + x2}) are not
+#'   supported.
+#' @param data An optional data frame (or environment) in which to evaluate
+#'   \code{formula}. If \code{NULL} (the default), variables are looked up in
+#'   the calling environment.
+#'
+#' @inheritParams validate_two_variable_exact_CI_function_arguments
+#'
+#' @returns A named \code{list} with the following elements:
+#' \describe{
+#'  \item{slope_cartesian}{see [two_variable_exact_CI()]}
+#'  \item{slope_polar}{see [two_variable_exact_CI()]}
+#'  \item{clockwise_CI_cartesian}{see [two_variable_exact_CI()]}
+#'  \item{clockwise_CI_polar}{see [two_variable_exact_CI()]}
+#'  \item{counterclockwise_CI_cartesian}{see [two_variable_exact_CI()]}
+#'  \item{counterclockwise_CI_polar}{see [two_variable_exact_CI()]}
+#'  \item{CI_polar_width}{see [two_variable_exact_CI()]}
+#'  \item{x_reliability_ratio}{see [two_variable_exact_CI()]}
+#'  \item{slope_test_p_value}{see [two_variable_exact_CI()]}
+#'  \item{calculationTerms}{see [two_variable_exact_CI()].}
+#'  \item{givenArguments}{see [two_variable_exact_CI()]}
+#'  \item{x_error_variance}{estimate of variance of x-axis variable's error,
+#'  calculated as `(1-x_reliability_ratio)*var(x)`, where
+#'  `var(x)` is calculated by dividing by `(n-1)` instead of `n`}
+#'  \item{y_error_variance}{estimate of variance of y-axis variable's error}
+#'  \item{y_intercept}{point where line of best fit crosses y-axis}
+#'  \item{x_intercept}{point where line of best fit crosses x-axis}
+#' }
+#'
+#'
+#' @export
+#'
+#' @examples
+#' set.seed(0)
+#' df <- data.frame(y = rnorm(20), x = rnorm(20))
+#'
+#' # Using a data frame
+#' result <- two_variable_exact_CI_formula(
+#'   formula             = y ~ x,
+#'   data                = df,
+#'   lambda = 1,
+#'   print_citation_info = FALSE
+#' )
+#' result$slope_cartesian
+#'
+#' # Using variables from the calling environment
+#' y <- rnorm(20); x <- rnorm(20)
+#' result2 <- two_variable_exact_CI_formula(
+#'   formula             = y ~ x,
+#'   lambda = 1,
+#'   print_citation_info = FALSE
+#' )
+#' result2$slope_cartesian
+two_variable_exact_CI_formula <- function(
+    formula,
+    data                        = NULL,
+    lambda,
+    slope_hypothesis            = NA,
+    CI_coefficient              = 0.95,
+    print_citation_info         = TRUE,
+    sql_round_to_zero_threshold = 1e-10,
+    lostDoF                     = 2,
+    debugArg                    = FALSE,
+    checkArg                    = TRUE
+) {
+
+  # ── 1. Validate the formula argument ────────────────────────────────────────
+  if (!inherits(formula, "formula")) {
+    stop("`formula` must be a formula object (e.g. y ~ x).", call. = FALSE)
+  }
+  if (length(formula) != 3L) {
+    stop("`formula` must be two-sided (e.g. y ~ x).", call. = FALSE)
+  }
+  formula_vars <- all.vars(formula)
+  if (length(formula_vars) != 2L) {
+    stop(
+      "`formula` must contain exactly one response and one predictor ",
+      "(e.g. y ~ x). Multivariate formulas are not supported.",
+      call. = FALSE
+    )
+  }
+
+  # ── 2. Extract y and x from data or the calling environment ─────────────────
+  # model.frame() handles both the data-frame and environment cases cleanly,
+  # and will raise informative errors if variables are not found.
+  env <- if (is.null(data)) parent.frame() else as.environment(data)
+  mf <- tryCatch(
+    stats::model.frame(formula, data = if (is.null(data)) parent.frame() else data),
+    error = function(e) stop(
+      "Could not extract variables from `formula`: ", conditionMessage(e),
+      call. = FALSE
+    )
+  )
+  y_vec <- mf[[1L]]   # response  (left-hand side of formula)
+  x_vec <- mf[[2L]]   # predictor (right-hand side of formula)
+
+  # ── 3. Basic sanity checks on the extracted vectors ─────────────────────────
+  if (!is.numeric(y_vec)) {
+    stop("The response variable (left side of formula) must be numeric.",
+         call. = FALSE)
+  }
+  if (!is.numeric(x_vec)) {
+    stop("The predictor variable (right side of formula) must be numeric.",
+         call. = FALSE)
+  }
+  if (anyNA(y_vec) || anyNA(x_vec)) {
+    stop(
+      "Variables extracted from `formula` must not contain missing values (NA).",
+      call. = FALSE
+    )
+  }
+
+  givenArguments<-list("formula"=formula,
+                       "data"=data,
+                       "lambda"=lambda,
+                       "slope_hypothesis"=slope_hypothesis,
+                       "CI_coefficient"=CI_coefficient,
+                       "sql_round_to_zero_threshold"=sql_round_to_zero_threshold,
+                       "lostDoF"=lostDoF,
+                       "print_citation_info"=print_citation_info,
+                       "checkArg"=checkArg,
+                       "debugArg"=debugArg)
+  # Check arguments
+  if (checkArg) { # all arguments should at least be passed onto checker.
+    validate_two_variable_exact_CI_function_arguments(
+      lambda                =lambda, validate_lambda=TRUE,
+      CI_coefficient        =CI_coefficient, validate_CI_coefficient=TRUE,
+      slope_hypothesis      =slope_hypothesis, validate_slope_hypothesis=TRUE,
+      sql_round_to_zero_threshold=sql_round_to_zero_threshold,validate_sql_round_to_zero_threshold=TRUE,
+      lostDoF               =lostDoF, validate_lostDoF=TRUE,
+      print_citation_info   =print_citation_info, validate_print_citation_info=TRUE,
+      checkArg              =checkArg, validate_checkArg=TRUE,
+      debugArg              =debugArg, validate_debugArg=TRUE,
+      y                     =y_vec,validate_y=TRUE,
+      x                     =x_vec,validate_x=TRUE,
+      validate_x_and_y=TRUE
+    )
+  }
+
+  # ── 4. Compute the summary statistics required by two_variable_exact_CI() ───
+  correlation            <- stats::cor(x_vec, y_vec)
+  sdOFy_divided_by_sdOFx <- stats::sd(y_vec) / stats::sd(x_vec)
+  square_root_of_lambda=sqrt(lambda)
+  sample_size <- length(y_vec)
+  mean_y<-mean(y_vec)
+  mean_x<-mean(x_vec)
+
+  # ── 5. Delegate to two_variable_exact_CI() ──────────────────────────────────
+  # Argument validation is already handled above, so checkArg = FALSE avoids
+  # redundant checking in the inner function.
+  inner <- two_variable_exact_CI(
+    correlation             = correlation,
+    sdOFy_divided_by_sdOFx  = sdOFy_divided_by_sdOFx,
+    square_root_of_lambda   = square_root_of_lambda,
+    sample_size             = sample_size,
+    slope_hypothesis        = slope_hypothesis,
+    CI_coefficient          = CI_coefficient,
+    sql_round_to_zero_threshold = sql_round_to_zero_threshold,
+    lostDoF                 = lostDoF,
+    print_citation_info     = print_citation_info,
+    checkArg                = FALSE,   # validated above
+    debugArg                = debugArg
+  )
+
+  # ── 6. Build the return list explicitly ─────────────────────────────────────
+  # Each element is assigned by name so that this list can be extended or
+  # modified independently of two_variable_exact_CI()'s output in future.
+  returnList <- list(
+    slope_cartesian                = inner$slope_cartesian,
+    slope_polar                    = inner$slope_polar,
+    clockwise_CI_cartesian         = inner$clockwise_CI_cartesian,
+    clockwise_CI_polar             = inner$clockwise_CI_polar,
+    counterclockwise_CI_cartesian  = inner$counterclockwise_CI_cartesian,
+    counterclockwise_CI_polar      = inner$counterclockwise_CI_polar,
+    CI_polar_width                 = inner$CI_polar_width,
+    x_reliability_ratio            = inner$x_reliability_ratio,
+    slope_test_p_value             = inner$slope_test_p_value,
+    calculationTerms               = inner$calculationTerms,
+    givenArguments                 = givenArguments
+  )
+  returnList$y_intercept <- mean_y - returnList$slope_cartesian*mean_x
+  returnList$x_intercept <- mean_x - mean_y/returnList$slope_cartesian
+  if (square_root_of_lambda<sql_round_to_zero_threshold) {
+    returnList$x_related<-(y_vec-returnList$y_intercept)/returnList$slope_cartesian
+    returnList$y_related<-y_vec
+    returnList$x_residual<-x_vec-returnList$x_related
+    returnList$y_residual<-rep(0,sample_size)
+    returnList$x_error_variance<-NA
+    returnList$y_error_variance<-0
+  } else {
+    b00<-returnList$slope_cartesian/(returnList$slope_cartesian^2+lambda)
+    b01<-y_vec-returnList$y_intercept-returnList$slope_cartesian*x_vec
+    returnList$x_related<-x_vec+b00*b01
+    returnList$y_related<-returnList$slope_cartesian*returnList$x_related+returnList$y_intercept
+    returnList$x_residual<-x_vec-returnList$x_related
+    returnList$y_residual<-y_vec-returnList$y_related
+    returnList$x_error_variance<-NA
+    returnList$y_error_variance<-NA
+  }
+  return(returnList)
+}
+
