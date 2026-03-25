@@ -2,3 +2,4 @@
 
 export(change_citation_printing_default)
 export(two_variable_exact_CI)
+export(two_variable_exact_CI_formula)

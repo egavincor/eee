@@ -365,3 +365,65 @@ test_that("two_variable_exact_CI", {
   expect_equal(e1$slope_test_p_value,round(0.00533044302134256,15))
 
 })
+
+test_that("two_variable_exact_CI prints citation info when print_citation_info=TRUE", {
+
+  # Ensure global citation printing is on, and restore it after test exits
+  change_citation_printing_default(TRUE)
+  on.exit(change_citation_printing_default(TRUE))
+
+  set.seed(0); n <- 10; x1 <- rnorm(n); y1 <- rnorm(n)
+
+  # Check that key components of the citation output are actually printed
+  expect_output(
+    two_variable_exact_CI(
+      correlation            = cor(x1, y1),
+      sdOFy_divided_by_sdOFx = sd(y1) / sd(x1),
+      square_root_of_lambda  = 1,
+      sample_size            = n,
+      print_citation_info    = TRUE
+    ),
+    regexp = "Rayner"  # from citationStrings[["Rayner85"]]
+  )
+
+  expect_output(
+    two_variable_exact_CI(
+      correlation            = cor(x1, y1),
+      sdOFy_divided_by_sdOFx = sd(y1) / sd(x1),
+      square_root_of_lambda  = 1,
+      sample_size            = n,
+      print_citation_info    = TRUE
+    ),
+    regexp = "change_citation_printing_default"
+  )
+
+  expect_output(
+    two_variable_exact_CI(
+      correlation            = cor(x1, y1),
+      sdOFy_divided_by_sdOFx = sd(y1) / sd(x1),
+      square_root_of_lambda  = 1,
+      sample_size            = n,
+      print_citation_info    = TRUE
+    ),
+    regexp = "R Software"
+  )
+
+  # Also verify that change_citation_printing_default(FALSE) suppresses output
+  # even when print_citation_info=TRUE, since internal_print_citations
+  # gates on the global flag
+  change_citation_printing_default(FALSE)
+  expect_output(
+    two_variable_exact_CI(
+      correlation            = cor(x1, y1),
+      sdOFy_divided_by_sdOFx = sd(y1) / sd(x1),
+      square_root_of_lambda  = 1,
+      sample_size            = n,
+      print_citation_info    = TRUE
+    ),
+    regexp = NA  # asserts NO output is produced
+  )
+})
+
+test_that("two_variable_exact_CI", {
+ expect_equal(2,2)
+})

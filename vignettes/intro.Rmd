@@ -1,0 +1,52 @@
+---
+title: "intro"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{intro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(eee)
+```
+
+# 2 variables, error-in-variable regression
+### Introduction
+
+Let's create two variables, one of which we will designate as the y-axis variable and call y, and the other we shall designate as the x-axis variable and call x.
+
+```{r create-data}
+set.seed(0)
+number_of_points <- 50
+y <- rnorm(number_of_points)
+x <- rnorm(number_of_points)
+```
+
+Of course, having generated the data ourselves, we can see y and x are not related to each other, but entirely random. Still, it is simple data we can use to explore this package's functions and error-in-variable models more broadly. The main thing that makes error-in-variable models different from standard ordinary least squares regression is that we can specify any value for $\lambda$ (lambda) that we want. Ordinary least squares regression is the special scenario where lambda is $\infty$ (infinity) because the y-variable has some error, but the x-variable has none. $\lambda$ is the quantity of the variance of the error in the y-variable divided by the variance of the error in the x-variable. So obviously when the x-variable has no error in it, then the positive variance of y's error divided by zero gives infinity. While my function does not actually accept $\infty$ as an input, we can see that putting a sufficiently large number, in this case 10^100 as the value for $\lambda$ gives an identical line to that traditionally obtained with OLS as we can see below:
+
+```{r ols-comparison}
+result_00 <- eee::two_variable_exact_CI(
+  correlation = cor(x, y),
+  sdOFy_divided_by_sdOFx = sd(y) / sd(x),
+  square_root_of_lambda = sqrt(10^100),
+  sample_size = number_of_points,
+  print_citation_info = FALSE
+)
+
+result_00$slope_cartesian
+```
+
+is the same as:
+
+```{r lm-comparison}
+result_01 <- stats::lm(y ~ x)
+summary(result_01)$coefficients["x", "Estimate"]
+```
