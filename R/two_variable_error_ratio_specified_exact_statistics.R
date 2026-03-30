@@ -28,6 +28,9 @@
 #' @param validate_sample_size `logical` `TRUE` if argument should be validated.
 #' @param slope_hypothesis `numeric` slope (if any) to test as null hypothesis.
 #' @param validate_slope_hypothesis `logical` `TRUE` if argument should be validated.
+#' @param slope_hypotheses `numeric` (vector if multiple slopes to test)
+#' slope (if any) to test as null hypothesis.
+#' @param validate_slope_hypotheses `logical` `TRUE` if argument should be validated.
 #' @param CI_coefficient `numeric` defaults to 0.95, % of time not to reject the
 #' null hypothesis assuming it is true.
 #' @param validate_CI_coefficient `logical` `TRUE` if argument should be validated.
@@ -87,6 +90,8 @@ validate_two_variable_exact_CI_function_arguments<-function(
     validate_sample_size=FALSE,
     slope_hypothesis=NA,
     validate_slope_hypothesis=FALSE,
+    slope_hypotheses=NA,
+    validate_slope_hypotheses=FALSE,
     CI_coefficient=NA,
     validate_CI_coefficient=FALSE,
     sql_round_to_zero_threshold=NA,
@@ -111,6 +116,7 @@ validate_two_variable_exact_CI_function_arguments<-function(
     "validate_square_root_of_lambda" = validate_square_root_of_lambda,
     "validate_sample_size" = validate_sample_size,
     "validate_slope_hypothesis" = validate_slope_hypothesis,
+    "validate_slope_hypotheses" = validate_slope_hypotheses,
     "validate_CI_coefficient" = validate_CI_coefficient,
     "validate_sql_round_to_zero_threshold"=validate_sql_round_to_zero_threshold,
     "validate_lostDoF" = validate_lostDoF,
@@ -166,6 +172,9 @@ validate_two_variable_exact_CI_function_arguments<-function(
       validate_scalar(x=slope_hypothesis,
                       name="slope_hypothesis", type="numeric")
     }
+  }
+  if (validate_slope_hypotheses) {
+      # pass for now
   }
   if (validate_CI_coefficient) {
     validate_scalar(x=CI_coefficient,
@@ -237,7 +246,7 @@ validate_two_variable_exact_CI_function_arguments<-function(
 #'  of proportion of x-axis variable's observed variance that is part of
 #'  the related (true) x-values and not the error. Remember
 #'  v(x_o)=v(x_t)+v(x_e), so this gives v(x_t)/v(x_o).}
-#'  \item{slope_test_p_value}{p-value of tested slope hypothesis (if given)}
+#'  \item{slope_test_p_value}{ vector of p-value(s) of tested slope hypothesis(es) (if given)}
 #'  \item{calculationTerms}{May contain code's intermediate calculation terms
 #'  and such (useful for debugging)}
 #'  \item{givenArguments}{`list` of function argument values used in call.}
@@ -252,13 +261,13 @@ validate_two_variable_exact_CI_function_arguments<-function(
 #'  sample_size=n,
 #'  CI_coefficient=0.80,
 #'  print_citation_info=FALSE,
-#'  slope_hypothesis=-1.45)
+#'  slope_hypotheses=-1.45)
 #' c1a$slope_cartesian
 two_variable_exact_CI<-function(correlation,
                                 sdOFy_divided_by_sdOFx,
                                 square_root_of_lambda,
                                 sample_size,
-                                slope_hypothesis=NA,
+                                slope_hypotheses=NA,
                                 CI_coefficient=0.95,
                                 sql_round_to_zero_threshold=1e-10,
                                 lostDoF=2,
@@ -269,7 +278,7 @@ two_variable_exact_CI<-function(correlation,
                        "sdOFy_divided_by_sdOFx"=sdOFy_divided_by_sdOFx,
                        "square_root_of_lambda"=square_root_of_lambda,
                        "sample_size"=sample_size,
-                       "slope_hypothesis"=slope_hypothesis,
+                       "slope_hypotheses"=slope_hypotheses,
                        "CI_coefficient"=CI_coefficient,
                        "sql_round_to_zero_threshold"=sql_round_to_zero_threshold,
                        "lostDoF"=lostDoF,
@@ -284,7 +293,7 @@ two_variable_exact_CI<-function(correlation,
       square_root_of_lambda =square_root_of_lambda, validate_square_root_of_lambda=TRUE,
       sample_size           =sample_size, validate_sample_size=TRUE,
       CI_coefficient        =CI_coefficient, validate_CI_coefficient=TRUE,
-      slope_hypothesis      =slope_hypothesis, validate_slope_hypothesis=TRUE,
+      slope_hypotheses      =slope_hypotheses, validate_slope_hypotheses=TRUE,
       sql_round_to_zero_threshold=sql_round_to_zero_threshold,validate_sql_round_to_zero_threshold=TRUE,
       lostDoF               =lostDoF, validate_lostDoF=TRUE,
       print_citation_info   =print_citation_info, validate_print_citation_info=TRUE,
@@ -339,19 +348,21 @@ two_variable_exact_CI<-function(correlation,
     }
     pWidth<-ccCIpolar-c_CIpolar
   }
-  if (is.na(slope_hypothesis)) {
+  if (length(slope_hypotheses) == 1 && is.na(slope_hypotheses[1])) {
     p_value<-NA
   } else {
+    p_value<-c()
+    t_test_helper<-correlation * sqrt(df / (1 - correlation^2))
     if (square_root_of_lambda > sql_round_to_zero_threshold) {
-      theta0 <- atan(slope_hypothesis / square_root_of_lambda)
-      qb_test <- 2 * (theta0 - d_theta)
-      q_test <- sin(qb_test) / sin(twoTheta)
+        theta0 <- atan(slope_hypotheses / square_root_of_lambda)
+        qb_test <- 2 * (theta0 - d_theta)
+        q_test <- sin(qb_test) / sin(twoTheta)
     } else {
-      # The exact Cartesian limit for q_test as lambda -> 0
-      q_test <- (slope_hypothesis - m) / slope_hypothesis
+        # The exact Cartesian limit for q_test as lambda -> 0
+        q_test <- (slope_hypotheses - m) / slope_hypotheses
     }
-    t_test <- q_test * correlation * sqrt(df / (1 - correlation^2))
-    p_value <- 2 * (1 - stats::pt(abs(t_test), df))
+    t_test <- q_test * t_test_helper
+    p_value <- 2 * (1 - stats::pt(abs(t_test), df))  
   }
   calculationTerms<-list("b2"=b2,"e2"=e2,"twopbe"=twopbe,
                          "df"=df,"t1"=t1,"t2"=t2,"d_theta"=d_theta,
